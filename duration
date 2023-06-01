@@ -1,18 +1,69 @@
 #!/bin/bash
+# Tomas Richtarik
 
-sum=0.0
-directory="$@"
-file_list=$(find "$directory" -type f -name "*.mp4")
+# Help page 
+show_help() {
+    echo "Duration App - Help"
+    echo "-------------------"
+    echo "This app calculates the total duration of MP4 files in a directory."
+
+    echo -e "\nUsage:"
+    echo "  ./duration [directory]"
+
+    echo -e "\nArguments:"
+    echo "  [directory]: The path to the directory containing MP4 files."
+
+    echo -e "\nExample:"
+    echo "  ./duration /path/to/directory"
+
+    echo -e "\nNotes:"
+    echo "- The app will search for MP4 files within the specified directory."
+    echo "- The total duration will be displayed in the format 'HH:MM'."
+
+    echo -e "\nPlease make sure you have FFmpeg installed for accurate duration calculations."
+}
+
+parse_args(){
+    #TODO redo the parsing arguments using getopt
+    
+    # Check if there is only one argument (either path or help)
+    if [[ $# -ne 1 ]]; then
+        show_help
+        exit 1
+    fi  
+
+    # Check if the help option is provided
+    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+        show_help
+        exit 0
+    fi
+    
+    # At this point there is only one argument presumably path    
+}
+
+calculate_duration(){
+    sum=0
+    directory="$@"
+    file_list=$(find "$directory" -type f)
 
 
-for file in $file_list; do
-    echo "$file"
-    duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file")
-    sum=$(echo "$sum + $duration" | bc)
-done
+    for file in $file_list; do
+        duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null)
+        if [[ -n "$duration" ]]; then
+            echo "Playable file: $file"
+        fi
+        sum=$(echo "$sum + $duration" | bc)
+    done
+    
 
-total_minutes=$(echo "scale=0; $sum / 60" | bc)
-hours=$(echo "$total_minutes / 60" | bc)
-minutes=$(echo "$total_minutes % 60" | bc)
+    total_minutes=$(echo "scale=0; $sum / 60" | bc)
+    hours=$(echo "$total_minutes / 60" | bc)
+    minutes=$(echo "$total_minutes % 60" | bc)
 
-printf "Total duration: %02d:%02d\n" "$hours" "$minutes"
+    printf "Total duration: %02d:%02d\n" "$hours" "$minutes"
+}
+
+parse_args "$@" 
+calculate_duration "$@"
+
+
