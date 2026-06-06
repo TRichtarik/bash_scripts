@@ -1,0 +1,25 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    read -p "Enter database name: " DB_NAME
+else
+    DB_NAME="$1"
+fi
+
+if [ -z "$DB_NAME" ]; then
+    echo "Database name is required."
+    exit 1
+fi
+
+export PGPASSWORD="odoo"
+
+createdb -h localhost -U odoo "$DB_NAME"
+
+psql -h localhost -U odoo -d "$DB_NAME" < dump.sql
+
+mkdir -p ~/.local/share/Odoo/filestore/"$DB_NAME"
+cp -a filestore/. ~/.local/share/Odoo/filestore/"$DB_NAME"/
+
+unset PGPASSWORD
+
+echo "Done."
